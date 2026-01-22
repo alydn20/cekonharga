@@ -1303,27 +1303,10 @@ async function doPromoBroadcast() {
 
     pushLog(`🎁 Broadcasting: ${currentStatus} to ${promoSubscriptions.size} subscribers ${currentStatus === 'OFF' ? `(OFF ${offBroadcastCountThisMinute}/5)` : ''}`)
 
-    // Kirim ke semua subscribers
+    // Kirim ke semua subscribers (tanpa mention)
     for (const chatId of promoSubscriptions) {
       try {
-        const isGroup = chatId.endsWith('@g.us')
-        let mentions = []
-
-        // ON di grup → mention semua member
-        if (currentStatus === 'ON' && isGroup) {
-          try {
-            const groupMetadata = await sock.groupMetadata(chatId)
-            mentions = groupMetadata.participants.map(p => p.id)
-            pushLog(`👥 Mention ${mentions.length} members di ${chatId.substring(0, 15)}`)
-          } catch (metaErr) {
-            pushLog(`⚠️ Gagal ambil member grup: ${metaErr.message}`)
-          }
-        }
-
-        await sock.sendMessage(chatId, {
-          text: message,
-          mentions: mentions
-        })
+        await sock.sendMessage(chatId, { text: message })
       } catch (e) {
         pushLog(`❌ Failed to send to ${chatId}: ${e.message}`)
       }
