@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# WhatsApp session & cache
+baileys-session/
+auth_info_baileys/
+.wwebjs_cache/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Claude Code
+.claude/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Backup
+.gitignore-app
+
+# Token & Auth
+# token.txt dan auth/ di-include karena repo PRIVATE
