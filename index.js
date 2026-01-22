@@ -1517,7 +1517,9 @@ async function checkPriceUpdate() {
       })
     })
 
-    // TRIGGER PROMO CHECK dengan delay 5 detik setelah harga berubah
+    // TRIGGER PROMO CHECK dengan delay 50 detik setelah harga berubah
+    // Agar perubahan harga terlihat dulu, baru ON/OFF belakangan
+    // PENTING: Jika sudah beda menit, jangan kirim!
     if (promoSubscriptions.size > 0) {
       // Cancel timeout/interval sebelumnya jika ada
       if (promoTriggerTimeout) {
@@ -1530,15 +1532,24 @@ async function checkPriceUpdate() {
         isPromoIntervalRunning = false
       }
 
-      pushLog(`🎁 Harga emas berubah → Promo check mulai dalam 5 detik...`)
+      // Simpan menit saat harga berubah
+      const priceChangeMinute = new Date().getMinutes()
+      pushLog(`🎁 Harga emas berubah (menit ${priceChangeMinute}) → Promo check dalam 50 detik...`)
 
       promoTriggerTimeout = setTimeout(() => {
         promoTriggerTimeout = null
 
+        // CEK: Masih di menit yang sama?
+        const currentMinuteNow = new Date().getMinutes()
+        if (currentMinuteNow !== priceChangeMinute) {
+          pushLog(`🎁 SKIP promo - sudah beda menit (${priceChangeMinute} → ${currentMinuteNow})`)
+          return
+        }
+
         // Mulai interval cek promo setiap 1 detik
         if (!isPromoIntervalRunning) {
           isPromoIntervalRunning = true
-          pushLog(`🎁 Memulai pengecekan promo setiap 1 detik (sampai detik 57)...`)
+          pushLog(`🎁 Memulai pengecekan promo (masih menit ${currentMinuteNow})...`)
 
           // Cek pertama langsung
           doPromoBroadcast().catch(e => {
@@ -1548,6 +1559,18 @@ async function checkPriceUpdate() {
           // Lanjut cek setiap 1 detik
           promoCheckInterval = setInterval(() => {
             const currentSecond = new Date().getSeconds()
+            const checkMinute = new Date().getMinutes()
+
+            // Stop jika sudah beda menit
+            if (checkMinute !== priceChangeMinute) {
+              if (promoCheckInterval) {
+                clearInterval(promoCheckInterval)
+                promoCheckInterval = null
+                isPromoIntervalRunning = false
+                pushLog(`🎁 Promo check STOP - sudah beda menit`)
+              }
+              return
+            }
 
             // Stop di detik 57
             if (currentSecond >= 57) {
@@ -1555,7 +1578,7 @@ async function checkPriceUpdate() {
                 clearInterval(promoCheckInterval)
                 promoCheckInterval = null
                 isPromoIntervalRunning = false
-                pushLog(`🎁 Promo check STOP di detik ${currentSecond} - menunggu harga emas berubah lagi`)
+                pushLog(`🎁 Promo check STOP di detik ${currentSecond}`)
               }
               return
             }
@@ -1566,7 +1589,7 @@ async function checkPriceUpdate() {
             })
           }, 1000) // Setiap 1 detik
         }
-      }, 5000) // 5 detik delay setelah harga berubah
+      }, 50000) // 50 detik delay setelah harga berubah
     }
 
   } catch (e) {
@@ -1581,7 +1604,7 @@ console.log(`✅ Broadcast: 50s cooldown OR new minute OR stale price (5m+)`)
 console.log(`📊 Price check: every ${PRICE_CHECK_INTERVAL/1000}s (ULTRA REAL-TIME!)`)
 console.log(`📊 Min price change: ±Rp${MIN_PRICE_CHANGE}`)
 console.log(`⏱️  Stale price threshold: ${STALE_PRICE_THRESHOLD/60000} minutes`)
-console.log(`🎁 Promo: Harga berubah → 5dtk delay → cek tiap 1dtk sampai detik 57 → ON/OFF=1x/mnt, OFF max 5x lalu STOP`)
+console.log(`🎁 Promo: Harga berubah → 50dtk delay → cek tiap 1dtk sampai detik 57 → ON/OFF=1x/mnt, OFF max 5x lalu STOP`)
 console.log(`🔧 XAU/USD cache: ${XAU_CACHE_DURATION/1000}s`)
 console.log(`💱 USD/IDR: Update setiap menit (sama seperti ketik "emas")`)
 console.log(`📅 Economic calendar: USD High-Impact (auto-hide 3hrs, WIB)`)
