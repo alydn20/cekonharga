@@ -1,44 +1,68 @@
-# Treasury WhatsApp Bot
+# Cekon Harga - Bot WhatsApp Treasury
 
-Bot WhatsApp untuk monitoring harga emas Treasury secara real-time dengan fitur auto-broadcast dan promo subscription.
-
-## 🚀 Features
-
-### 📊 Harga Emas Real-Time
-- Auto-update setiap 1 detik
-- Broadcast saat harga berubah (min ±Rp1)
-- Broadcast setiap ganti menit atau per 50 detik
-- Include USD/IDR rate dari Google Finance
-- Include XAU/USD rate
-- Economic calendar USD (High-Impact events)
-
-### 🎁 Promo Treasury
-- Auto-broadcast promo setiap 1 menit
-- List promo aktif dengan expiry countdown
-- Nominal promo dengan perhitungan hemat otomatis
-- Subscribe/unsubscribe broadcast promo
+Bot WhatsApp untuk monitoring promo Treasury (ON/OFF) secara real-time.
 
 ---
 
-## 📋 Available Commands
+## Fitur
 
-| Command | Fungsi | Type |
-|---------|--------|------|
-| `emas` | Cek harga emas (manual) | Manual |
-| `aktif` | Subscribe broadcast harga | Subscription |
-| `nonaktif` | Unsubscribe broadcast harga | Subscription |
-| `cekpromo` | Lihat promo aktif lengkap (ON/OFF + List) | Manual |
-| `cekon` / `cekpromoaktif` | Subscribe broadcast ON/OFF status 20jt | Subscription |
-| `cekonnonaktif` / `cekpromononaktif` | Unsubscribe broadcast promo | Subscription |
+- Cek status promo ON/OFF otomatis
+- Notifikasi ON dengan mention semua member grup
+- Notifikasi OFF maksimal 5x lalu stop (sampai ON lagi)
+- Tidak ada spam - hanya 1 pesan per menit
 
 ---
 
-## ⚙️ Installation
+## Command WhatsApp
+
+| Command | Fungsi |
+|---------|--------|
+| `cekon` | Mulai terima notifikasi ON/OFF |
+| `cekonmati` | Berhenti terima notifikasi |
+
+---
+
+## Alur Sistem
+
+```
+User kirim "cekon"
+       |
+       v
+   Response: "Mulai"
+       |
+       v
++----------------------------------+
+| BACKEND: Cek harga emas tiap 1s  |
+| (tidak dikirim ke WhatsApp)      |
++----------------------------------+
+       |
+   Harga berubah?
+       | Ya
+       v
+   Tunggu 5 detik
+       |
+       v
++----------------------------------+
+| Cek API promo tiap 1 detik       |
+| (sampai detik 57)                |
++----------------------------------+
+       |
+       v
++----------------------------------+
+| KIRIM KE WHATSAPP:               |
+| - ON: "ON" + mention (1x/menit)  |
+| - OFF: "OFF" (1x/mnt, max 5x)    |
++----------------------------------+
+```
+
+---
+
+## Instalasi
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/alydn20/tscek.git
-cd tscek
+git clone https://github.com/alydn20/cekonharga.git
+cd cekonharga
 ```
 
 ### 2. Install Dependencies
@@ -46,176 +70,78 @@ cd tscek
 npm install
 ```
 
-### 3. Setup Token File
-
-**⚡ OTOMATIS (Recommended):**
+### 3. Setup Token
 ```bash
-# Run script untuk auto-login dan dapat token baru
 node get-token.js
 ```
 
-Script akan otomatis:
-- Login ke Treasury API
-- Ambil token baru
-- Save ke `token.txt`
-- ✅ Token siap dipakai!
-
-**🔧 MANUAL (Jika perlu):**
-1. Install [HTTP Toolkit](https://httptoolkit.com/)
-2. Intercept aplikasi Treasury di HP
-3. Copy header `Authorization` dari request ke `connect.treasury.id`
-4. Paste ke `token.txt` (tanpa kata "Bearer")
-
-### 4. Run Bot
+### 4. Jalankan Bot
 ```bash
 node index.js
 ```
 
+### 5. Scan QR Code
+Buka `http://localhost:8000/qr` dan scan dengan WhatsApp
+
 ---
 
-## 🔧 Configuration
+## Konfigurasi
 
-Edit `index.js` untuk custom settings:
+Edit `index.js` untuk mengubah credentials Treasury:
 
 ```javascript
-// Broadcast settings
-const PRICE_CHECK_INTERVAL = 1000 // Check harga setiap 1 detik
-const MIN_PRICE_CHANGE = 1 // Min perubahan harga untuk broadcast (Rp)
-const BROADCAST_COOLDOWN = 50000 // Cooldown antar broadcast (50 detik)
-
-// Promo broadcast
-const PROMO_BROADCAST_INTERVAL = 60000 // Broadcast promo setiap 1 menit
-
-// Anti-spam
-const COOLDOWN_PER_CHAT = 60000 // Cooldown per chat
-const GLOBAL_THROTTLE = 3000 // Global throttle
+"email": "083898584984",
+"password": "@Facebook20",
 ```
 
 ---
 
-## 📱 Usage
+## File Struktur
 
-### Subscribe Harga Emas:
-1. Chat bot di WhatsApp
-2. Ketik: `aktif`
-3. Bot akan broadcast update harga setiap 1 menit / 50 detik
-
-### Subscribe Promo ON/OFF:
-1. Chat bot di WhatsApp
-2. Ketik: `cekon` atau `cekpromoaktif`
-3. Bot akan broadcast status ON/OFF promo 20jt setiap 1 menit
-
-### Manual Check:
-- Ketik: `emas` → Lihat harga real-time
-- Ketik: `cekpromo` → Lihat detail promo (ON/OFF + List lengkap)
+```
+cekonharga/
+  ├── index.js           # Bot utama
+  ├── package.json       # Dependencies
+  ├── token.txt          # Token Treasury API
+  ├── get-token.js       # Script ambil token
+  ├── refresh-token.js   # Script refresh token
+  └── README.md          # Dokumentasi
+```
 
 ---
 
-## 🐳 Docker Deployment
+## API yang Digunakan
 
-### Build Image:
+| API | Kegunaan |
+|-----|----------|
+| `api.treasury.id/api/v1/antigrvty/gold/rate` | Harga emas (trigger) |
+| `connect.treasury.id/nominal/suggestion` | Status ON/OFF promo |
+
+---
+
+## Pesan yang Dikirim
+
+| Status | Pesan | Mention | Frekuensi |
+|--------|-------|---------|-----------|
+| ON | `ON` | Ya (semua member) | 1x per menit |
+| OFF | `OFF` | Tidak | 1x per menit, max 5x |
+
+---
+
+## Troubleshooting
+
+### Token Expired (401)
 ```bash
-docker build -t treasury-bot .
-```
-
-### Run Container:
-```bash
-docker run -d --name treasury-bot treasury-bot
-```
-
----
-
-## 📁 File Structure
-
-```
-ts-main/
-  ├── index.js              # Main bot file
-  ├── package.json          # Dependencies
-  ├── package-lock.json     # Lock file
-  ├── Dockerfile            # Docker config
-  ├── .dockerignore         # Docker ignore
-  ├── .gitignore            # Git ignore
-  ├── COMMANDS.md           # Command documentation
-  └── README.md             # This file
-
-cekmemru/ (parent directory)
-  └── token.txt             # Treasury API token (required!)
-```
-
----
-
-## 🔐 Security Notes
-
-⚠️ **IMPORTANT:**
-- **NEVER** commit `token.txt` to git
-- **NEVER** share your token with others
-- Token = full access to your Treasury account
-- Token akan expired setelah beberapa waktu (update di `token.txt`)
-
----
-
-## 🛠️ Troubleshooting
-
-### Error: Token expired (401)
-**Solusi CEPAT:**
-```bash
-# Run script auto refresh token
 node get-token.js
-
-# Restart bot
-node index.js
 ```
 
-**Solusi Manual:**
-1. Ambil token baru dari aplikasi Treasury (via HTTP Toolkit)
-2. Edit file `token.txt`
-3. Paste token baru
-4. Restart bot
-
-### Error: File token.txt not found
-**Solusi:**
-Pastikan file `token.txt` ada di parent directory:
-```
-cekmemru/token.txt  ← Harus ada di sini
-cekmemru/ts-main/index.js
-```
-
-### Bot tidak kirim broadcast
-**Cek:**
-1. Apakah ada subscriber? (ketik `aktif` atau `cekpromoaktif`)
-2. Lihat console log untuk error
-3. Pastikan token masih valid
+### Bot Tidak Kirim Pesan
+1. Pastikan sudah ketik `cekon`
+2. Cek console untuk error
+3. Pastikan token valid
 
 ---
 
-## 📊 API Endpoints Used
+## License
 
-| Endpoint | Usage |
-|----------|-------|
-| `api.treasury.id/api/v1/antigrvty/gold/rate` | Harga emas beli/jual |
-| `connect.treasury.id/promotion/suggestion` | List promo aktif |
-| `connect.treasury.id/nominal/suggestion` | Nominal promo |
-| `www.google.com/finance/quote/USD-IDR` | Kurs USD/IDR |
-| Economic Calendar API | USD High-Impact events |
-
----
-
-## 📝 License
-
-Free to use untuk keperluan pribadi.
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome!
-
----
-
-## 📧 Support
-
-Jika ada pertanyaan atau bug report, silakan buat issue di GitHub.
-
----
-
-**Made with ❤️ for Treasury users**
+Free untuk penggunaan pribadi.
