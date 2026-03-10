@@ -1219,7 +1219,7 @@ let offStartTime = 0 // Tidak dipakai lagi
 let isPromoChecking = false // Guard untuk mencegah concurrent fetch
 let promoCheckCount = 0 // Counter untuk logging
 
-async function doPromoBroadcast() {
+async function doPromoBroadcast(immediateCheck = false) {
   if (!sock || !isReady || promoSubscriptions.size === 0) return
 
   // Cegah concurrent fetch
@@ -1258,6 +1258,13 @@ async function doPromoBroadcast() {
 
     if (statusChanged) {
       pushLog(`🎁 Status berubah: ${lastPromoStatus} → ${currentStatus}`)
+    }
+
+    // Immediate check hanya boleh kirim kalau OFF→ON
+    // ON biasa diserahkan ke interval 50 detik agar tidak double kirim
+    if (immediateCheck && !isOffToOn) {
+      lastPromoStatus = currentStatus
+      return
     }
 
     // LOGIKA BROADCAST:
@@ -1536,8 +1543,8 @@ async function checkPriceUpdate() {
     // Agar perubahan harga terlihat dulu, baru ON/OFF belakangan
     // PENTING: Jika sudah beda menit, jangan kirim!
     if (promoSubscriptions.size > 0) {
-      // Cek promo LANGSUNG saat harga berubah (untuk deteksi OFF→ON di detik itu juga)
-      doPromoBroadcast().catch(e => {
+      // Cek promo LANGSUNG saat harga berubah (hanya untuk deteksi OFF→ON)
+      doPromoBroadcast(true).catch(e => {
         pushLog(`❌ Promo immediate check error: ${e.message}`)
       })
 
