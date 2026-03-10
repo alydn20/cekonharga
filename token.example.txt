@@ -1,0 +1,7 @@
+eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...YOUR_TREASURY_TOKEN_HERE...
+
+INSTRUCTIONS:
+1. Rename this file to: ../token.txt (parent directory)
+2. Replace content with your actual Treasury API token
+3. Token format: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9... (without "Bearer ")
+4. Get token from Treasury app using HTTP Toolkit
