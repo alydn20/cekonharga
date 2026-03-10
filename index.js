@@ -1706,12 +1706,38 @@ app.get('/calendar', async (_req, res) => {
   }
 })
 
+app.get('/refresh-token', async (_req, res) => {
+  try {
+    pushLog('🔄 Manual token refresh via HTTP...')
+    const newToken = await refreshTokenIfNeeded()
+    pushLog(`✅ Token refreshed via HTTP! Length: ${newToken.length}`)
+    res.json({
+      success: true,
+      message: 'Token berhasil direfresh',
+      tokenLength: newToken.length,
+      preview: newToken.substring(0, 20) + '...'
+    })
+  } catch (e) {
+    pushLog(`❌ HTTP token refresh gagal: ${e.message}`)
+    res.status(500).json({
+      success: false,
+      error: e.message
+    })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`🌐 Server: http://localhost:${PORT}`)
   console.log(`📊 Stats: http://localhost:${PORT}/stats`)
   console.log(`💊 Health: http://localhost:${PORT}/health`)
-  console.log(`📅 Calendar: http://localhost:${PORT}/calendar\n`)
+  console.log(`📅 Calendar: http://localhost:${PORT}/calendar`)
+  console.log(`🔑 Refresh Token: http://localhost:${PORT}/refresh-token\n`)
 })
+
+// Auto-refresh token saat startup
+refreshTokenIfNeeded()
+  .then(() => pushLog('✅ Startup token refresh OK'))
+  .catch(e => pushLog(`⚠️ Startup token refresh gagal: ${e.message}`))
 
 // KEEP-ALIVE SYSTEM
 const SELF_URL = process.env.RENDER_EXTERNAL_URL || 
